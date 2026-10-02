@@ -197,7 +197,7 @@
 
   <header>
     <div>
-      <h1>üß† My Open Brain</h1>
+      <h1>🧠 My Open Brain</h1>
       <div class="status">
         <div class="dot" id="dot"></div>
         <span id="statusText">Connecting...</span>
@@ -211,7 +211,7 @@
 
   <div class="banner" id="banner"></div>
 
-  <!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê LOGIN SCREEN (shown when nobody is signed in) ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+  <!-- ═══════════ LOGIN SCREEN (shown when nobody is signed in) ═══════════ -->
   <div id="loginView" class="hidden">
     <form class="card login" id="loginForm">
       <h2 id="loginTitle">Sign in to your brain</h2>
@@ -231,23 +231,23 @@
     </form>
   </div>
 
-  <!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê THE APP (shown when signed in) ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+  <!-- ═══════════ THE APP (shown when signed in) ═══════════ -->
   <div id="appView" class="hidden">
 
     <nav class="tabs" id="tabs">
-      <button class="tab" data-tab="write">‚úçÔ∏è Write</button>
-      <button class="tab" data-tab="voice">üéôÔ∏è Voice</button>
-      <button class="tab" data-tab="youtube">üìπ YouTube</button>
-      <button class="tab" data-tab="pdf">üìÑ PDF</button>
-      <button class="tab" data-tab="url">üîó URL</button>
-      <button class="tab" data-tab="search">üîç Search</button>
-      <button class="tab" data-tab="recent">üïí Recent</button>
+      <button class="tab" data-tab="write">✍️ Write</button>
+      <button class="tab" data-tab="voice">🎙️ Voice</button>
+      <button class="tab" data-tab="youtube">📹 YouTube</button>
+      <button class="tab" data-tab="pdf">📄 PDF</button>
+      <button class="tab" data-tab="url">🔗 URL</button>
+      <button class="tab" data-tab="search">🔍 Search</button>
+      <button class="tab" data-tab="recent">🕒 Recent</button>
     </nav>
 
     <!-- WRITE -->
     <section class="panel" id="tab-write">
       <div class="card">
-        <textarea id="writeText" rows="4" placeholder="Capture anything ‚Äî ideas, notes, things you learned, questions, plans..."></textarea>
+        <textarea id="writeText" rows="4" placeholder="Capture anything — ideas, notes, things you learned, questions, plans..."></textarea>
         <div class="row">
           <button id="writeBtn" onclick="saveWrite()">Save to Brain</button>
           <span class="hint">or Ctrl+Enter</span>
@@ -265,12 +265,12 @@
           This browser can't do voice-to-text. Open your brain in <b>Chrome</b> or <b>Edge</b> on a computer, or Chrome on Android. (Safari works on some iPhones but not all.) You can still type in the box below.
         </div>
         <div class="mic-wrap">
-          <button class="mic" id="micBtn" onclick="toggleMic()" aria-label="Start listening">üéôÔ∏è</button>
+          <button class="mic" id="micBtn" onclick="toggleMic()" aria-label="Start listening">🎙️</button>
           <span class="mic-label" id="micLabel">Tap to start</span>
           <select id="voiceLang" aria-label="Language you will speak">
             <option value="en-US">English</option>
-            <option value="es-MX">Espa√±ol (M√©xico)</option>
-            <option value="es-ES">Espa√±ol (Espa√±a)</option>
+            <option value="es-MX">Español (México)</option>
+            <option value="es-ES">Español (España)</option>
           </select>
         </div>
         <textarea id="voiceText" class="tall" placeholder="Your words will appear here..."></textarea>
@@ -287,7 +287,7 @@
     <section class="panel" id="tab-youtube">
       <div class="card">
         <h2>Capture a YouTube video</h2>
-        <p class="lead">Paste a video link. YouTube won't hand transcripts to web pages like this one, so for now you'll copy it yourself ‚Äî Level 3 automates this.</p>
+        <p class="lead">Paste a video link. YouTube won't hand transcripts to web pages like this one, so for now you'll copy it yourself — Level 3 automates this.</p>
         <input type="url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
         <div id="ytInfo" class="hidden">
           <div class="video">
@@ -298,12 +298,12 @@
             </div>
           </div>
           <ol style="margin-top:18px">
-            <li>Click <b>Get Transcript</b> below ‚Äî the video opens in a new tab.</li>
-            <li>Under the video, click the description (<b>‚Ä¶more</b>), scroll down and click <b>Show transcript</b>.</li>
+            <li>Click <b>Get Transcript</b> below — the video opens in a new tab.</li>
+            <li>Under the video, click the description (<b>…more</b>), scroll down and click <b>Show transcript</b>.</li>
             <li>The transcript opens on the right. Click and drag from the first line to the last to select it all, then copy (<b>Cmd+C</b> / <b>Ctrl+C</b>).</li>
             <li>Come back here and paste it in the box below. Timestamps are removed for you.</li>
           </ol>
-          <a class="btn ghost" id="ytLink" target="_blank" rel="noopener noreferrer">Get Transcript ‚Üó</a>
+          <a class="btn ghost" id="ytLink" target="_blank" rel="noopener noreferrer">Get Transcript ↗</a>
           <label class="field" for="ytTranscript">Transcript</label>
           <textarea id="ytTranscript" class="tall" placeholder="Paste the transcript here..."></textarea>
           <div class="row">
@@ -321,7 +321,7 @@
         <h2>Capture a PDF</h2>
         <p class="lead">The text is pulled out right here in your browser. The file itself is never uploaded anywhere.</p>
         <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Choose a PDF">
-          <span class="big">üìÑ</span>
+          <span class="big">📄</span>
           Drop a PDF here, or click to choose one
         </div>
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" class="hidden">
@@ -330,7 +330,7 @@
           <div class="hint" id="pdfProgress" style="margin-top:6px"></div>
         </div>
         <div id="pdfReview" class="hidden">
-          <label class="field" for="pdfText">Extracted text ‚Äî check it over before saving</label>
+          <label class="field" for="pdfText">Extracted text — check it over before saving</label>
           <textarea id="pdfText" class="tall"></textarea>
           <div class="row">
             <button id="pdfBtn" onclick="savePdf()">Save to Brain</button>
@@ -388,7 +388,7 @@
   const thoughtCache = new Map()   // id -> full text, for "Show all"
   const $ = id => document.getElementById(id)
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Setup & connection ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Setup & connection ─────────────────────── */
 
   function showBanner(html) {
     const b = $('banner')
@@ -459,13 +459,13 @@
     loadRecent()
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Login / sign up ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Login / sign up ─────────────────────── */
 
   function toggleAuthMode() {
     authMode = authMode === 'signin' ? 'signup' : 'signin'
     const up = authMode === 'signup'
     $('loginTitle').textContent = up ? 'Create your account' : 'Sign in to your brain'
-    $('loginLead').textContent = up ? 'Pick a password you will remember ‚Äî at least 6 characters (8+ is better).' : "Only you can see what's inside."
+    $('loginLead').textContent = up ? 'Pick a password you will remember — at least 6 characters (8+ is better).' : "Only you can see what's inside."
     $('loginBtn').textContent = up ? 'Create account' : 'Sign in'
     $('switchText').textContent = up ? 'Already have an account?' : 'No account yet?'
     $('switchBtn').textContent = up ? 'Sign in' : 'Create one'
@@ -496,7 +496,7 @@
         if (error) throw error
       }
     } catch (err) {
-      msg.textContent = '‚úó ' + err.message
+      msg.textContent = '✗ ' + err.message
       msg.className = 'save-msg err'
     } finally {
       btn.disabled = false
@@ -509,7 +509,7 @@
     await db.auth.signOut()
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Tabs ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Tabs ─────────────────────── */
 
   function showTab(name) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name))
@@ -526,7 +526,7 @@
   try { startTab = localStorage.getItem('ob-tab') || 'write' } catch (e) {}
   showTab($('tab-' + startTab) ? startTab : 'write')
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Saving ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Saving ─────────────────────── */
 
   // Every save goes through here, so user_id is always set.
   // `source` (optional) also stores the full text in thought_sources.
@@ -537,7 +537,7 @@
     if (error) throw error
 
     if (source && source.text) {
-      // The thought is already saved ‚Äî a problem here must not undo the capture.
+      // The thought is already saved — a problem here must not undo the capture.
       try {
         const { error: srcErr } = await db.from('thought_sources').insert({
           thought_id: data.id,
@@ -555,7 +555,7 @@
     return data
   }
 
-  // Shared button behaviour: "Saving...", then ‚úì or ‚úó
+  // Shared button behaviour: "Saving...", then ✓ or ✗
   async function withSave(btnId, msgId, work) {
     const btn = $(btnId), msg = $(msgId)
     const label = btn.textContent
@@ -565,11 +565,11 @@
     msg.className = 'save-msg'
     try {
       await work()
-      msg.textContent = '‚úì Saved'
+      msg.textContent = '✓ Saved'
       msg.className = 'save-msg ok'
       loadRecent()
     } catch (e) {
-      msg.textContent = '‚úó ' + e.message
+      msg.textContent = '✗ ' + e.message
       msg.className = 'save-msg err'
     } finally {
       btn.disabled = false
@@ -579,7 +579,7 @@
 
   function fail(msg) { throw new Error(msg) }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Write ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Write ─────────────────────── */
 
   function saveWrite() {
     withSave('writeBtn', 'writeMsg', async () => {
@@ -593,7 +593,7 @@
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveWrite()
   })
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Voice ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Voice ─────────────────────── */
 
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition
   let recognition = null
@@ -652,7 +652,7 @@
         'network': 'Voice-to-text needs an internet connection.'
       }
       if (e.error === 'aborted') return
-      $('voiceMsg').textContent = '‚úó ' + (msgs[e.error] || ('Voice error: ' + e.error))
+      $('voiceMsg').textContent = '✗ ' + (msgs[e.error] || ('Voice error: ' + e.error))
       $('voiceMsg').className = 'save-msg err'
     }
     recognition.onend = () => setListening(false)
@@ -662,7 +662,7 @@
       recognition.start()
       setListening(true)
     } catch (e) {
-      $('voiceMsg').textContent = '‚úó ' + e.message
+      $('voiceMsg').textContent = '✗ ' + e.message
       $('voiceMsg').className = 'save-msg err'
     }
   }
@@ -678,12 +678,12 @@
     withSave('voiceBtn', 'voiceMsg', async () => {
       const text = $('voiceText').value.trim()
       if (!text) fail('Say something first')
-      await saveThought({ content: 'üéôÔ∏è Voice: ' + text })
+      await saveThought({ content: '🎙️ Voice: ' + text })
       $('voiceText').value = ''
     })
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ YouTube ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── YouTube ─────────────────────── */
 
   let ytVideoId = null
 
@@ -735,7 +735,7 @@
       $('ytTitle').value = decodeEntities(info.title || '')
       $('ytAuthor').textContent = info.author_name ? decodeEntities(info.author_name) : ''
     } catch (e) {
-      if (ytVideoId === id) $('ytAuthor').textContent = "Couldn't look up the title ‚Äî type it in above."
+      if (ytVideoId === id) $('ytAuthor').textContent = "Couldn't look up the title — type it in above."
     } finally {
       $('ytTitle').placeholder = 'Video title'
     }
@@ -776,7 +776,7 @@
       if (!transcript) fail('Paste the transcript first')
       const title = decodeEntities($('ytTitle').value.trim()) || 'Untitled video'
       await saveThought({
-        content: 'üìπ YouTube: ' + title + '\nhttps://www.youtube.com/watch?v=' + ytVideoId + '\n\n' + transcript,
+        content: '📹 YouTube: ' + title + '\nhttps://www.youtube.com/watch?v=' + ytVideoId + '\n\n' + transcript,
         metadata: { video_id: ytVideoId },
         source: { kind: 'youtube_transcript', text: transcript }
       })
@@ -787,7 +787,7 @@
     })
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ PDF ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── PDF ─────────────────────── */
 
   let pdfName = null
   let pdfPages = 0
@@ -822,12 +822,12 @@
     $('pdfMsg').textContent = ''
 
     if (!window.pdfjsLib) {
-      err.textContent = '‚úó The PDF reader did not load. Check your internet connection and refresh the page.'
+      err.textContent = '✗ The PDF reader did not load. Check your internet connection and refresh the page.'
       err.className = 'save-msg err'
       return
     }
     if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
-      err.textContent = '‚úó That file is not a PDF.'
+      err.textContent = '✗ That file is not a PDF.'
       err.className = 'save-msg err'
       return
     }
@@ -858,18 +858,18 @@
 
       if (!text) {
         $('pdfProgressWrap').classList.add('hidden')
-        err.textContent = '‚úó No text found. This PDF is probably scanned images of pages, which need a different tool (OCR) to read.'
+        err.textContent = '✗ No text found. This PDF is probably scanned images of pages, which need a different tool (OCR) to read.'
         err.className = 'save-msg err'
         return
       }
       pdfName = file.name
       pdfPages = pdf.numPages
-      $('pdfProgress').textContent = '‚úì ' + pdf.numPages + ' page' + (pdf.numPages === 1 ? '' : 's') + ' ¬∑ ' + text.length.toLocaleString() + ' characters'
+      $('pdfProgress').textContent = '✓ ' + pdf.numPages + ' page' + (pdf.numPages === 1 ? '' : 's') + ' · ' + text.length.toLocaleString() + ' characters'
       $('pdfText').value = text
       $('pdfReview').classList.remove('hidden')
     } catch (e) {
       $('pdfProgressWrap').classList.add('hidden')
-      err.textContent = '‚úó ' + (e && e.name === 'PasswordException'
+      err.textContent = '✗ ' + (e && e.name === 'PasswordException'
         ? 'This PDF is password-protected. Open it, save an unlocked copy, and try that.'
         : 'Could not read this PDF: ' + (e && e.message))
       err.className = 'save-msg err'
@@ -890,7 +890,7 @@
       const text = decodeEntities($('pdfText').value.trim())
       if (!text) fail('Nothing to save')
       await saveThought({
-        content: 'üìÑ PDF: ' + pdfName + '\n\n' + text,
+        content: '📄 PDF: ' + pdfName + '\n\n' + text,
         metadata: { filename: pdfName, pages: pdfPages }
       })
       $('pdfText').value = ''
@@ -899,7 +899,7 @@
     })
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ URL ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── URL ─────────────────────── */
 
   $('webText').addEventListener('paste', () => {
     setTimeout(() => { $('webText').value = decodeEntities($('webText').value) }, 0)
@@ -919,7 +919,7 @@
       const title = decodeEntities($('webTitle').value.trim()) || url.hostname.replace(/^www\./, '')
 
       await saveThought({
-        content: 'üîó Web: ' + title + '\n' + url.href + '\n\n' + text,
+        content: '🔗 Web: ' + title + '\n' + url.href + '\n\n' + text,
         metadata: { url: url.href },
         source: { kind: 'web', text }
       })
@@ -929,7 +929,7 @@
     })
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Search ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Search ─────────────────────── */
 
   let lastQuery = ''
 
@@ -968,7 +968,7 @@
 
   $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch() })
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Recent ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Recent ─────────────────────── */
 
   async function loadRecent() {
     if (!currentUser) return
@@ -986,7 +986,7 @@
     }
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Thought cards ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Thought cards ─────────────────────── */
 
   const PREVIEW = 420
 
@@ -996,7 +996,7 @@
     const long = text.length > PREVIEW
     let body
     if (query) body = highlight(snippet(text, query), query)
-    else body = esc(long ? text.slice(0, PREVIEW).trimEnd() + '‚Ä¶' : text)
+    else body = esc(long ? text.slice(0, PREVIEW).trimEnd() + '…' : text)
     return `
       <div class="thought" data-id="${esc(t.id)}">
         <div class="thought-text">${body}</div>
@@ -1011,10 +1011,10 @@
   function sourceLink(t) {
     const m = t.metadata || {}
     if (m.video_id && /^[A-Za-z0-9_-]{11}$/.test(m.video_id)) {
-      return `<a href="https://www.youtube.com/watch?v=${m.video_id}" target="_blank" rel="noopener noreferrer">Watch on YouTube ‚Üó</a>`
+      return `<a href="https://www.youtube.com/watch?v=${m.video_id}" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>`
     }
     if (m.url && /^https?:\/\//i.test(m.url)) {
-      return `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">Open article ‚Üó</a>`
+      return `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">Open article ↗</a>`
     }
     return ''
   }
@@ -1029,7 +1029,7 @@
     const expanded = btn.textContent === 'Show less'
     const q = card.closest('#searchResults') ? lastQuery : ''
     if (expanded) {
-      box.innerHTML = q ? highlight(snippet(full, q), q) : esc(full.slice(0, PREVIEW).trimEnd() + '‚Ä¶')
+      box.innerHTML = q ? highlight(snippet(full, q), q) : esc(full.slice(0, PREVIEW).trimEnd() + '…')
       btn.textContent = 'Show all'
     } else {
       box.innerHTML = q ? highlight(full, q) : esc(full)
@@ -1041,10 +1041,10 @@
   function snippet(text, q) {
     if (text.length <= PREVIEW) return text
     const i = text.toLowerCase().indexOf(q.toLowerCase())
-    if (i < 0) return text.slice(0, PREVIEW).trimEnd() + '‚Ä¶'
+    if (i < 0) return text.slice(0, PREVIEW).trimEnd() + '…'
     const start = Math.max(0, i - 150)
     const end = Math.min(text.length, start + PREVIEW)
-    return (start > 0 ? '‚Ä¶' : '') + text.slice(start, end).trim() + (end < text.length ? '‚Ä¶' : '')
+    return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '')
   }
 
   // Escape everything, wrapping matches in <mark>
@@ -1060,7 +1060,7 @@
     return out + esc(raw.slice(last))
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Helpers ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── Helpers ─────────────────────── */
 
   // PDF text and copy-pasted web pages sometimes leave codes like &ntilde; or
   // &rsquo; behind instead of the real character. This turns them back.
@@ -1069,11 +1069,11 @@
   const ENTITIES = {
     lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
     LT: '<', GT: '>', QUOT: '"',
-    rsquo: '‚Äô', lsquo: '‚Äò', rdquo: '‚Äù', ldquo: '‚Äú',
-    mdash: '‚Äî', ndash: '‚Äì', hellip: '‚Ä¶',
-    aacute: '√°', eacute: '√©', iacute: '√≠', oacute: '√≥', uacute: '√∫', ntilde: '√±', uuml: '√º',
-    Aacute: '√Å', Eacute: '√â', Iacute: '√ç', Oacute: '√ì', Uacute: '√ö', Ntilde: '√ë', Uuml: '√ú',
-    iexcl: '¬°', iquest: '¬ø'
+    rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+    mdash: '—', ndash: '–', hellip: '…',
+    aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú', ntilde: 'ñ', uuml: 'ü',
+    Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú', Ntilde: 'Ñ', Uuml: 'Ü',
+    iexcl: '¡', iquest: '¿'
   }
   function decodeEntities(text) {
     if (!text) return ''
@@ -1083,7 +1083,7 @@
       .replace(/&([A-Za-z]+);/g, (m, name) => Object.prototype.hasOwnProperty.call(ENTITIES, name) ? ENTITIES[name] : m)
       .replace(/&#(\d+);/g, (m, n) => fromCode(parseInt(n, 10), m))          // &#39; &#241; ...
       .replace(/&#x([0-9a-f]+);/gi, (m, n) => fromCode(parseInt(n, 16), m))  // &#x27; ...
-      .replace(/¬†/g, ' ')
+      .replace(/ /g, ' ')
       .replace(/&amp;/gi, '&')                                                // always last
   }
 
@@ -1099,7 +1099,7 @@
     })
   }
 
-  /* ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ PWA ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ */
+  /* ─────────────────────── PWA ─────────────────────── */
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
