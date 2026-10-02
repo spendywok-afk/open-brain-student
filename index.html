@@ -225,7 +225,9 @@
         <button type="submit" id="loginBtn">Sign in</button>
         <span class="save-msg" id="loginMsg"></span>
       </div>
-      <div class="switch">
+      <!-- Sign-ups are turned off in Supabase, so the "Create one" link is hidden.
+           To bring it back, delete the word "hidden" on the next line. -->
+      <div class="switch hidden">
         <span id="switchText">No account yet?</span>
         <button type="button" class="link" id="switchBtn" onclick="toggleAuthMode()">Create one</button>
       </div>
