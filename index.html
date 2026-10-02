@@ -108,6 +108,7 @@
     button.link:hover:not(:disabled) { background: none; color: #a5b4fc; }
 
     .hint { font-size: 0.75rem; color: #444; line-height: 1.5; }
+    @media (hover: none) { .kbd-hint { display: none; } }   /* phones have no Ctrl key */
     .save-msg { font-size: 0.8rem; min-height: 16px; }
     .save-msg.ok { color: #22c55e; }
     .save-msg.err { color: #ef4444; }
@@ -250,7 +251,7 @@
         <textarea id="writeText" rows="4" placeholder="Capture anything — ideas, notes, things you learned, questions, plans..."></textarea>
         <div class="row">
           <button id="writeBtn" onclick="saveWrite()">Save to Brain</button>
-          <span class="hint">or Ctrl+Enter</span>
+          <span class="hint kbd-hint">or Ctrl+Enter</span>
           <span class="save-msg" id="writeMsg"></span>
         </div>
       </div>
@@ -505,7 +506,7 @@
   })
 
   async function signOut() {
-    if (listening && recognition) recognition.stop()
+    stopListening(true)
     await db.auth.signOut()
   }
 
@@ -531,6 +532,8 @@
   // Every save goes through here, so user_id is always set.
   // `source` (optional) also stores the full text in thought_sources.
   async function saveThought({ content, metadata, source }) {
+    content = stripInvisible(content)
+    if (source) source = { kind: source.kind, text: stripInvisible(source.text) }
     const row = { content, user_id: currentUser.id }
     if (metadata) row.metadata = metadata
     const { data, error } = await db.from('thoughts').insert(row).select('id').single()
@@ -568,9 +571,11 @@
       msg.textContent = '✓ Saved'
       msg.className = 'save-msg ok'
       loadRecent()
+      return true
     } catch (e) {
       msg.textContent = '✗ ' + e.message
       msg.className = 'save-msg err'
+      return false
     } finally {
       btn.disabled = false
       btn.textContent = label
@@ -621,31 +626,45 @@
     $('voiceLang').disabled = on
   }
 
+  // iPhones sometimes never finish stopping on their own, which left the
+  // button stuck on red. So the button flips back right away, and if the
+  // browser still hasn't let go after a moment, we force it.
+  function stopListening(discardPending) {
+    if (!recognition) return
+    const rec = recognition
+    recognition = null
+    setListening(false)
+    try { discardPending ? rec.abort() : rec.stop() } catch (e) {}
+    setTimeout(() => { try { rec.abort() } catch (e) {} }, 1500)
+  }
+
   function toggleMic() {
     if (!SpeechRec) return
-    if (listening) { recognition.stop(); return }
+    if (listening) { stopListening(false); return }
 
     const box = $('voiceText')
     const before = box.value.trim()     // keep anything already in the box
-    let finalText = ''
 
-    recognition = new SpeechRec()
-    recognition.lang = $('voiceLang').value
-    recognition.continuous = true
-    recognition.interimResults = true
+    const rec = new SpeechRec()
+    recognition = rec
+    rec.lang = $('voiceLang').value
+    rec.continuous = true
+    rec.interimResults = true
 
-    recognition.onresult = e => {
-      let interim = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+    // Rebuild from the full list every time — iPhones can resend earlier
+    // results, and adding them up piece by piece would repeat words.
+    rec.onresult = e => {
+      let finalText = '', interim = ''
+      for (let i = 0; i < e.results.length; i++) {
         const r = e.results[i]
         if (r.isFinal) finalText += r[0].transcript.trim() + ' '
         else interim += r[0].transcript
       }
       box.value = [before, (finalText + interim).trim()].filter(Boolean).join(' ')
     }
-    recognition.onerror = e => {
+    rec.onerror = e => {
       const msgs = {
-        'not-allowed': 'Microphone is blocked. Click the icon at the left of the address bar, allow the microphone, then try again.',
+        'not-allowed': 'Microphone is blocked. On a computer: click the icon at the left of the address bar and allow the microphone. On iPhone: Settings → Apps → Safari → Microphone → Allow. Then try again.',
         'service-not-allowed': 'Microphone is blocked. Check your browser and system settings allow this site to use it.',
         'no-speech': "Didn't hear anything. Try again a little closer to the microphone.",
         'audio-capture': 'No microphone found. Is one plugged in and turned on?',
@@ -655,26 +674,31 @@
       $('voiceMsg').textContent = '✗ ' + (msgs[e.error] || ('Voice error: ' + e.error))
       $('voiceMsg').className = 'save-msg err'
     }
-    recognition.onend = () => setListening(false)
+    rec.onend = () => {
+      if (recognition !== rec) return   // an older session ending late
+      recognition = null
+      setListening(false)
+    }
 
     $('voiceMsg').textContent = ''
     try {
-      recognition.start()
+      rec.start()
       setListening(true)
     } catch (e) {
+      recognition = null
       $('voiceMsg').textContent = '✗ ' + e.message
       $('voiceMsg').className = 'save-msg err'
     }
   }
 
   function clearVoice() {
-    if (listening) recognition.stop()
+    stopListening(true)
     $('voiceText').value = ''
     $('voiceMsg').textContent = ''
   }
 
   function saveVoice() {
-    if (listening) recognition.stop()
+    stopListening(true)
     withSave('voiceBtn', 'voiceMsg', async () => {
       const text = $('voiceText').value.trim()
       if (!text) fail('Say something first')
@@ -769,8 +793,8 @@
     }, 0)
   })
 
-  function saveYouTube() {
-    withSave('ytBtn', 'ytMsg', async () => {
+  async function saveYouTube() {
+    const saved = await withSave('ytBtn', 'ytMsg', async () => {
       if (!ytVideoId) fail('Paste a YouTube link first')
       const transcript = cleanTranscript($('ytTranscript').value).text
       if (!transcript) fail('Paste the transcript first')
@@ -780,11 +804,15 @@
         metadata: { video_id: ytVideoId },
         source: { kind: 'youtube_transcript', text: transcript }
       })
-      $('ytUrl').value = ''
-      $('ytTranscript').value = ''
-      $('ytInfo').classList.add('hidden')
-      ytVideoId = null
     })
+    if (!saved) return
+    // The form hides after saving, so confirm outside it
+    $('ytUrl').value = ''
+    $('ytTranscript').value = ''
+    $('ytInfo').classList.add('hidden')
+    ytVideoId = null
+    $('ytUrlMsg').textContent = '✓ Saved. Paste another link to capture the next video.'
+    $('ytUrlMsg').className = 'save-msg ok'
   }
 
   /* ─────────────────────── PDF ─────────────────────── */
@@ -850,7 +878,7 @@
         }
         pages.push(s.trim())
       }
-      const text = decodeEntities(pages.filter(Boolean).join('\n\n'))
+      const text = stripInvisible(decodeEntities(pages.filter(Boolean).join('\n\n')))
         .replace(/[ \t]{2,}/g, ' ')
         .replace(/ *\n */g, '\n')
         .replace(/\n{3,}/g, '\n\n')
@@ -885,18 +913,21 @@
     $('pdfErr').textContent = ''
   }
 
-  function savePdf() {
-    withSave('pdfBtn', 'pdfMsg', async () => {
+  async function savePdf() {
+    const saved = await withSave('pdfBtn', 'pdfMsg', async () => {
       const text = decodeEntities($('pdfText').value.trim())
       if (!text) fail('Nothing to save')
       await saveThought({
         content: '📄 PDF: ' + pdfName + '\n\n' + text,
         metadata: { filename: pdfName, pages: pdfPages }
       })
-      $('pdfText').value = ''
-      $('pdfReview').classList.add('hidden')
-      $('pdfProgressWrap').classList.add('hidden')
     })
+    if (!saved) return
+    // The review box hides after saving, so confirm outside it
+    const name = pdfName
+    resetPdf()
+    $('pdfErr').textContent = '✓ Saved "' + name + '". Drop another PDF any time.'
+    $('pdfErr').className = 'save-msg ok'
   }
 
   /* ─────────────────────── URL ─────────────────────── */
@@ -1085,6 +1116,16 @@
       .replace(/&#x([0-9a-f]+);/gi, (m, n) => fromCode(parseInt(n, 16), m))  // &#x27; ...
       .replace(/ /g, ' ')
       .replace(/&amp;/gi, '&')                                                // always last
+  }
+
+  // PDFs especially can carry invisible control characters (like the "null"
+  // character) and broken half-emoji. The database rejects those with
+  // "unsupported Unicode escape sequence", so they are removed before saving.
+  // Line breaks and tabs are kept.
+  function stripInvisible(text) {
+    return String(text || '')
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
   }
 
   function esc(s) {
