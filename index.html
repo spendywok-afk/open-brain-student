@@ -113,6 +113,17 @@
     .save-msg.ok { color: #22c55e; }
     .save-msg.err { color: #ef4444; }
     .save-msg.info { color: #818cf8; }
+    .save-msg.warn { color: #f59e0b; }
+
+    /* "Paste it yourself" fallback under the automatic capture */
+    details.manual { margin-top: 22px; border-top: 1px solid #222; padding-top: 14px; }
+    details.manual > summary {
+      cursor: pointer; font-size: 0.8rem; color: #818cf8; list-style: none;
+    }
+    details.manual > summary::-webkit-details-marker { display: none; }
+    details.manual > summary::before { content: '▸ '; }
+    details.manual[open] > summary::before { content: '▾ '; }
+    details.manual > .inner { margin-top: 12px; }
 
     /* Login */
     .login { max-width: 400px; margin: 48px auto 0; }
@@ -290,7 +301,7 @@
     <section class="panel" id="tab-youtube">
       <div class="card">
         <h2>Capture a YouTube video</h2>
-        <p class="lead">Paste a video link. YouTube won't hand transcripts to web pages like this one, so for now you'll copy it yourself — Level 3 automates this.</p>
+        <p class="lead">Paste a video link. Your capture-youtube server function fetches the transcript for you.</p>
         <input type="url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
         <div id="ytInfo" class="hidden">
           <div class="video">
@@ -300,19 +311,28 @@
               <div class="author" id="ytAuthor"></div>
             </div>
           </div>
-          <ol style="margin-top:18px">
-            <li>Click <b>Get Transcript</b> below — the video opens in a new tab.</li>
-            <li>Under the video, click the description (<b>…more</b>), scroll down and click <b>Show transcript</b>.</li>
-            <li>The transcript opens on the right. Click and drag from the first line to the last to select it all, then copy (<b>Cmd+C</b> / <b>Ctrl+C</b>).</li>
-            <li>Come back here and paste it in the box below. Timestamps are removed for you.</li>
-          </ol>
-          <a class="btn ghost" id="ytLink" target="_blank" rel="noopener noreferrer">Get Transcript ↗</a>
-          <label class="field" for="ytTranscript">Transcript</label>
-          <textarea id="ytTranscript" class="tall" placeholder="Paste the transcript here..."></textarea>
           <div class="row">
-            <button id="ytBtn" onclick="saveYouTube()">Save to Brain</button>
-            <span class="save-msg" id="ytMsg"></span>
+            <button id="ytAutoBtn" onclick="captureYouTube()">Capture Transcript</button>
+            <span class="save-msg" id="ytAutoMsg"></span>
           </div>
+          <details class="manual" id="ytManual">
+            <summary>Or paste the transcript yourself</summary>
+            <div class="inner">
+              <ol>
+                <li>Click <b>Get Transcript</b> below — the video opens in a new tab.</li>
+                <li>Under the video, click the description (<b>…more</b>), scroll down and click <b>Show transcript</b>.</li>
+                <li>The transcript opens on the right. Click and drag from the first line to the last to select it all, then copy (<b>Cmd+C</b> / <b>Ctrl+C</b>).</li>
+                <li>Come back here and paste it in the box below. Timestamps are removed for you.</li>
+              </ol>
+              <a class="btn ghost" id="ytLink" target="_blank" rel="noopener noreferrer">Get Transcript ↗</a>
+              <label class="field" for="ytTranscript">Transcript</label>
+              <textarea id="ytTranscript" class="tall" placeholder="Paste the transcript here..."></textarea>
+              <div class="row">
+                <button id="ytBtn" onclick="saveYouTube()">Save to Brain</button>
+                <span class="save-msg" id="ytMsg"></span>
+              </div>
+            </div>
+          </details>
         </div>
         <div class="save-msg" id="ytUrlMsg" style="margin-top:8px"></div>
       </div>
@@ -349,17 +369,26 @@
     <section class="panel" id="tab-url">
       <div class="card">
         <h2>Capture an article</h2>
-        <p class="lead">Browsers don't let one website read another website's pages (a security rule that protects you), so copy the article's text yourself and paste it here. Level 3 automates this.</p>
+        <p class="lead">Paste a link. Browsers can't read other websites' pages (a security rule that protects you), so your capture-url server function fetches it instead.</p>
         <label class="field" for="webUrl">Web address</label>
         <input type="url" id="webUrl" placeholder="https://..." autocomplete="off">
-        <label class="field" for="webTitle">Title (optional)</label>
-        <input type="text" id="webTitle" placeholder="What is this article?">
-        <label class="field" for="webText">Article text</label>
-        <textarea id="webText" class="tall" placeholder="On the article: Cmd+A (or Ctrl+A) to select all, Cmd+C to copy, then paste here. Trim the menus and ads if you like."></textarea>
         <div class="row">
-          <button id="webBtn" onclick="saveWeb()">Save to Brain</button>
-          <span class="save-msg" id="webMsg"></span>
+          <button id="webAutoBtn" onclick="captureWeb()">Capture Article</button>
+          <span class="save-msg" id="webAutoMsg"></span>
         </div>
+        <details class="manual" id="webManual">
+          <summary>Or paste the text yourself (for pages behind a login, or that come back empty)</summary>
+          <div class="inner">
+            <label class="field" for="webTitle">Title (optional)</label>
+            <input type="text" id="webTitle" placeholder="What is this article?">
+            <label class="field" for="webText">Article text</label>
+            <textarea id="webText" class="tall" placeholder="On the article: Cmd+A (or Ctrl+A) to select all, Cmd+C to copy, then paste here. Trim the menus and ads if you like."></textarea>
+            <div class="row">
+              <button id="webBtn" onclick="saveWeb()">Save to Brain</button>
+              <span class="save-msg" id="webMsg"></span>
+            </div>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -751,6 +780,7 @@
     $('ytTitle').placeholder = 'Looking up title...'
     $('ytAuthor').textContent = ''
     $('ytMsg').textContent = ''
+    $('ytAutoMsg').textContent = ''
     $('ytInfo').classList.remove('hidden')
 
     try {
@@ -816,6 +846,92 @@
     $('ytUrlMsg').textContent = '✓ Saved. Paste another link to capture the next video.'
     $('ytUrlMsg').className = 'save-msg ok'
   }
+
+  /* ─────────────────── Server capture (Level 3) ─────────────────── */
+
+  // Calls one of your Supabase Edge Functions. Your login token goes along
+  // automatically, which is how the function knows whose brain to save into.
+  async function callCapture(name, body) {
+    const { data, error } = await db.functions.invoke(name, { body })
+    if (error) {
+      let message = error.message
+      try {
+        const b = await error.context.json()
+        if (b && b.error) message = b.error
+      } catch (e) {}
+      throw new Error(message)
+    }
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Capture failed')
+    return data
+  }
+
+  async function captureYouTube() {
+    if (!ytVideoId) return
+    const btn = $('ytAutoBtn'), msg = $('ytAutoMsg')
+    btn.disabled = true
+    btn.textContent = 'Capturing...'
+    msg.textContent = 'Fetching the transcript — this can take up to 30 seconds'
+    msg.className = 'save-msg info'
+    try {
+      const r = await callCapture('capture-youtube', {
+        url: 'https://www.youtube.com/watch?v=' + ytVideoId,
+        title: decodeEntities($('ytTitle').value.trim())
+      })
+      $('ytUrl').value = ''
+      $('ytTranscript').value = ''
+      $('ytManual').open = false
+      $('ytInfo').classList.add('hidden')
+      ytVideoId = null
+      if (r.has_transcript) {
+        $('ytUrlMsg').textContent = '✓ Saved "' + r.title + '" with its full transcript (' +
+          r.chars.toLocaleString() + ' characters). Paste another link any time.'
+        $('ytUrlMsg').className = 'save-msg ok'
+      } else {
+        // Never let a description pass for a transcript without saying so
+        $('ytUrlMsg').textContent = '⚠ Saved "' + r.title + '", but no transcript could be fetched — ' +
+          "only the video's description was saved, and the thought is labelled that way."
+        $('ytUrlMsg').className = 'save-msg warn'
+      }
+      loadRecent()
+    } catch (e) {
+      msg.textContent = '✗ ' + e.message + ' You can paste the transcript yourself below.'
+      msg.className = 'save-msg err'
+      $('ytManual').open = true
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Capture Transcript'
+    }
+  }
+
+  async function captureWeb() {
+    const btn = $('webAutoBtn'), msg = $('webAutoMsg')
+    const raw = $('webUrl').value.trim()
+    if (!raw) {
+      msg.textContent = '✗ Paste the web address first'
+      msg.className = 'save-msg err'
+      return
+    }
+    btn.disabled = true
+    btn.textContent = 'Capturing...'
+    msg.textContent = 'Fetching the page...'
+    msg.className = 'save-msg info'
+    try {
+      const r = await callCapture('capture-url', { url: raw })
+      $('webUrl').value = ''
+      $('webManual').open = false
+      msg.textContent = '✓ Saved "' + r.title + '" (' + r.chars.toLocaleString() + ' characters)'
+      msg.className = 'save-msg ok'
+      loadRecent()
+    } catch (e) {
+      msg.textContent = '✗ ' + e.message
+      msg.className = 'save-msg err'
+      $('webManual').open = true
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Capture Article'
+    }
+  }
+  $('webUrl').addEventListener('keydown', e => { if (e.key === 'Enter') captureWeb() })
 
   /* ─────────────────────── PDF ─────────────────────── */
 
