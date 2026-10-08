@@ -567,7 +567,13 @@
     if (source) source = { kind: source.kind, text: stripInvisible(source.text) }
     const row = { content, user_id: currentUser.id }
     if (metadata) row.metadata = metadata
-    const { data, error } = await db.from('thoughts').insert(row).select('id').single()
+    // upsert, not insert: saving the same text twice updates the existing row
+    // instead of failing on the duplicate rule (dedup_key + user_id).
+    const { data, error } = await db
+      .from('thoughts')
+      .upsert(row, { onConflict: 'dedup_key,user_id', ignoreDuplicates: false })
+      .select('id, created_at')
+      .single()
     if (error) throw error
 
     if (source && source.text) {

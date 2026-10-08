@@ -3,7 +3,7 @@
 // ============================================================================
 // The parts both capture functions need: who is calling, and how to save.
 //
-// The saving here is deliberately plain — one insert into thoughts, one into
+// The saving here is deliberately plain — one upsert into thoughts, one into
 // thought_sources — exactly what the app's own saveThought() did in Level 2.
 // ============================================================================
 
@@ -57,8 +57,13 @@ export async function saveCapture(
 
   const { data: thought, error } = await admin
     .from('thoughts')
-    .insert({ user_id: capture.userId, content, metadata: capture.metadata })
-    .select('id')
+    // upsert, not insert: capturing the same thing twice updates the existing
+    // row instead of failing on the duplicate rule (dedup_key + user_id).
+    .upsert(
+      { user_id: capture.userId, content, metadata: capture.metadata },
+      { onConflict: 'dedup_key,user_id', ignoreDuplicates: false },
+    )
+    .select('id, created_at')
     .single()
   if (error) throw error
 

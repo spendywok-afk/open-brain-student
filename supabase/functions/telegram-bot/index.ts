@@ -108,11 +108,16 @@ Deno.serve(async (req) => {
     } else if (text.startsWith('/')) {
       await reply(chatId, "I don't know that command.\n\n" + HELP)
     } else {
-      const { error } = await db.from('thoughts').insert({
-        content: text,
-        user_id: ownerUserId,
-        metadata: { source: 'telegram' },
-      })
+      // upsert, not insert: if Telegram re-sends a message, the existing row is
+      // updated instead of a duplicate being saved (dedup_key + user_id).
+      const { error } = await db
+        .from('thoughts')
+        .upsert(
+          { content: text, user_id: ownerUserId, metadata: { source: 'telegram' } },
+          { onConflict: 'dedup_key,user_id', ignoreDuplicates: false },
+        )
+        .select('id, created_at')
+        .single()
       if (error) throw error
       await reply(chatId, '✅ Saved to your brain')
     }

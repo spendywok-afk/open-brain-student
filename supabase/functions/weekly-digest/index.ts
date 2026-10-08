@@ -130,15 +130,24 @@ Deno.serve(async (req) => {
     const content = `Weekly digest, ${range} (${thoughts.length} thoughts)\n\n${digest.trim()}`
 
     // enriched_at is set so this row is never re-tagged by enrich-thought.
-    const { error: saveErr } = await admin.from('thoughts').insert({
-      user_id: ownerUserId,
-      content,
-      category: 'digest',
-      tags: ['digest'],
-      summary: `Weekly digest of ${thoughts.length} thoughts, ${range}`,
-      enriched_at: new Date().toISOString(),
-      metadata: { source: 'weekly-digest', week_start: weekStart.toISOString(), week_end: weekEnd.toISOString() },
-    })
+    // upsert, not insert: a re-run that produces the same text updates the
+    // existing row instead of failing on the duplicate rule (dedup_key + user_id).
+    const { error: saveErr } = await admin
+      .from('thoughts')
+      .upsert(
+        {
+          user_id: ownerUserId,
+          content,
+          category: 'digest',
+          tags: ['digest'],
+          summary: `Weekly digest of ${thoughts.length} thoughts, ${range}`,
+          enriched_at: new Date().toISOString(),
+          metadata: { source: 'weekly-digest', week_start: weekStart.toISOString(), week_end: weekEnd.toISOString() },
+        },
+        { onConflict: 'dedup_key,user_id', ignoreDuplicates: false },
+      )
+      .select('id, created_at')
+      .single()
     if (saveErr) throw saveErr
 
     await sendToTelegram(content)

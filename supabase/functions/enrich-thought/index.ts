@@ -8,7 +8,15 @@
 //   category   idea, learning, question, reference, plan or reflection
 //   summary    one sentence
 //
-// and writes them back onto the same row.
+// and writes them back onto the same row. Then it asks generate-embedding for
+// the thought's meaning as 1,536 numbers and stores that in the embedding
+// column. The two steps are independent: if tagging fails the embedding is
+// still tried, and if the embedding fails the thought just waits for the
+// backfill. Short notes and the weekly digest skip tagging but still get an
+// embedding, so they show up in meaning-based search.
+//
+// Once the embedding is saved, it finds the thought's nearest neighbours (more
+// than 50% similar, at most 5) and links them in thought_links — the graph.
 //
 // It answers the webhook straight away and does the work afterwards, because
 // webhooks give up waiting after a few seconds and an AI call can take longer.
@@ -27,6 +35,8 @@
 
 import { adminClient } from '../_shared/capture.ts'
 import { callLLM } from '../_shared/llm.ts'
+import { generateEmbedding } from '../_shared/embedding.ts'
+import { linkThought } from '../_shared/links.ts'
 
 const CATEGORIES = ['idea', 'learning', 'question', 'reference', 'plan', 'reflection']
 
@@ -81,6 +91,41 @@ async function enrich(record: { id: string; user_id: string | null; content: str
   }
 }
 
+async function embed(record: { id: string; user_id: string | null; content: string }) {
+  try {
+    const embedding = await generateEmbedding({
+      text: record.content,
+      userId: record.user_id,
+      source: 'enrich-thought',
+    })
+    // No embedding? Carry on — the thought is saved and the backfill can
+    // fill this in later. generate-embedding already logged why.
+    if (!embedding) return
+
+    const { error } = await adminClient()
+      .from('thoughts')
+      .update({ embedding })
+      .eq('id', record.id)
+    if (error) throw error
+
+    console.log(`Embedded ${record.id}`)
+    await link(record, embedding)
+  } catch (e) {
+    console.error(`Could not save embedding for ${record.id}:`, e instanceof Error ? e.message : e)
+  }
+}
+
+// Auto-link: find the thought's nearest neighbours and save a link to each.
+// Only runs once the embedding is saved — no embedding, no linking.
+async function link(record: { id: string; user_id: string | null }, embedding: number[]) {
+  try {
+    const count = await linkThought(adminClient(), record, embedding)
+    console.log(`Linked ${record.id} to ${count} thought(s)`)
+  } catch (e) {
+    console.error(`Could not link ${record.id}:`, e instanceof Error ? e.message : e)
+  }
+}
+
 Deno.serve(async (req) => {
   const ok = () => new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } })
 
@@ -94,20 +139,26 @@ Deno.serve(async (req) => {
   const payload = await req.json().catch(() => null)
   const record = payload?.record
 
-  if (payload?.type !== 'INSERT' || !record?.id || typeof record.content !== 'string') {
+  if (payload?.type !== 'INSERT' || !record?.id || typeof record.content !== 'string' || !record.content.trim()) {
     console.log('Nothing to enrich in this call')
     return ok()
   }
+
+  let tag = true
   if (record.content.trim().length < 20) {
-    console.log(`Skipped ${record.id}: too short to tag`)
-    return ok()
+    console.log(`Skipped tagging ${record.id}: too short to tag`)
+    tag = false
   }
   // The weekly digest saves itself as a thought — leave its category alone.
   if (record.category === 'digest' || record.enriched_at) {
-    return ok()
+    tag = false
   }
 
-  const work = enrich(record)
+  // Tag first, then embed — every thought gets an embedding either way.
+  const work = (async () => {
+    if (tag) await enrich(record)
+    await embed(record)
+  })()
   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work)
   else await work
 

@@ -10,7 +10,7 @@
 // touches your database itself. It only ever sees what these tools hand back.
 //
 // The tools on the "menu":
-//   search_thoughts  find thoughts containing a word or phrase
+//   search_thoughts  find thoughts related in meaning to a question or topic
 //   list_recent      your newest thoughts
 //   get_thought      the full text of one thought (the other two show previews)
 //   add_thought      save a new thought
@@ -29,6 +29,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { stripInvisible } from '../_shared/text.ts'
+import { generateEmbedding } from '../_shared/embedding.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,13 +64,15 @@ const TOOLS = [
     name: 'search_thoughts',
     description:
       "Search the user's Open Brain — their personal knowledge base of notes, YouTube transcripts, " +
-      'articles, PDFs and Telegram messages — for thoughts containing a word or phrase. Matching is ' +
-      "plain text, not by meaning: the exact phrase must appear (capitals don't matter). Use one or two " +
-      'distinctive keywords, and if nothing comes back, try synonyms or related words. Returns up to 10 ' +
-      'matches, newest first, as previews; call get_thought with an id for the full text.',
+      'articles, PDFs and Telegram messages — for thoughts related in meaning to the query. Matching is ' +
+      'by meaning, not exact words, so describe the idea naturally (a question or short phrase works ' +
+      'well). Returns up to 10 matches, most similar first, as previews with a similarity score from ' +
+      '0 to 1. Each match may list "connected" thoughts — ones the brain linked to it automatically ' +
+      'because they are close in meaning; mention them when relevant, since they often surface ideas ' +
+      'the user forgot. Call get_thought with an id for the full text.',
     inputSchema: {
       type: 'object',
-      properties: { query: { type: 'string', description: 'Word or short phrase to look for' } },
+      properties: { query: { type: 'string', description: 'The idea, question or topic to look for' } },
       required: ['query'],
     },
   },
@@ -211,6 +214,37 @@ async function callTool(name: string, args: Record<string, unknown>) {
     case 'search_thoughts': {
       const query = String(args.query ?? '').trim()
       if (!query) throw new Error('query is empty — pass a word or phrase to search for')
+
+      // Search by meaning: turn the question into an embedding, then ask the
+      // database for the thoughts whose embeddings point the same way.
+      const embedding = await generateEmbedding({ text: query, userId: ownerUserId, source: 'mcp-search' })
+      if (embedding) {
+        const { data, error } = await db.rpc('search_thoughts', {
+          query_embedding: embedding,
+          p_user_id: ownerUserId,
+          match_threshold: 0.3,
+          match_count: 10,
+        })
+        if (error) throw error
+        if (!data.length) return 'No thoughts are close in meaning to "' + query + '". Try describing it differently.'
+        // Connections are a bonus — if fetching them fails, still return the results.
+        const connected = await connectionsFor(db, ownerUserId, data.map((t: Thought) => t.id)).catch((e) => {
+          console.warn('Search worked, but connections could not be loaded:', e instanceof Error ? e.message : e)
+          return new Map<string, { id: string; similarity: number; content: string }[]>()
+        })
+        return JSON.stringify(
+          data.map((t: Thought & { similarity: number }) => ({
+            ...preview(t),
+            similarity: round2(t.similarity),
+            ...(connected.get(t.id)?.length ? { connected: connected.get(t.id) } : {}),
+          })),
+          null,
+          2,
+        )
+      }
+
+      // No embedding (provider down, out of credit): fall back to plain text
+      // matching so search still works, just less cleverly.
       // % and _ are wildcards in ilike; escape them so they match literally
       const pattern = '%' + query.replace(/[\\%_]/g, (m) => '\\' + m) + '%'
       const { data, error } = await db
@@ -268,7 +302,12 @@ async function callTool(name: string, args: Record<string, unknown>) {
       if (!content) throw new Error('content is empty — nothing to save')
       const { data, error } = await db
         .from('thoughts')
-        .insert({ content, user_id: ownerUserId, metadata: { source: 'mcp' } })
+        // upsert, not insert: saving the same text twice updates the existing
+        // row instead of failing on the duplicate rule (dedup_key + user_id).
+        .upsert(
+          { content, user_id: ownerUserId, metadata: { source: 'mcp' } },
+          { onConflict: 'dedup_key,user_id', ignoreDuplicates: false },
+        )
         .select('id, content, created_at')
         .single()
       if (error) throw error
@@ -292,6 +331,58 @@ function preview(t: Thought) {
     content: content.length > PREVIEW_CHARS ? content.slice(0, PREVIEW_CHARS) + '…' : content,
     ...(content.length > PREVIEW_CHARS ? { full_length: content.length } : {}),
   }
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+// The graph: for each search result, the thoughts it is linked to in
+// thought_links (either direction), strongest first, as short previews.
+const CONNECTED_PER_RESULT = 3
+const CONNECTED_PREVIEW_CHARS = 300
+
+async function connectionsFor(db: any, ownerUserId: string, ids: string[]) {
+  const byThought = new Map<string, { id: string; similarity: number; content: string }[]>()
+  if (!ids.length) return byThought
+
+  const list = ids.join(',')
+  const { data: links, error } = await db
+    .from('thought_links')
+    .select('source_thought_id, target_thought_id, similarity_score')
+    .eq('user_id', ownerUserId)
+    .or(`source_thought_id.in.(${list}),target_thought_id.in.(${list})`)
+    .order('similarity_score', { ascending: false })
+  if (error) throw error
+  if (!links?.length) return byThought
+
+  // Pair each result with the thought at the other end of each of its links.
+  const pairs: { from: string; to: string; similarity: number }[] = []
+  for (const l of links) {
+    if (ids.includes(l.source_thought_id)) pairs.push({ from: l.source_thought_id, to: l.target_thought_id, similarity: l.similarity_score })
+    if (ids.includes(l.target_thought_id)) pairs.push({ from: l.target_thought_id, to: l.source_thought_id, similarity: l.similarity_score })
+  }
+
+  const otherIds = [...new Set(pairs.map((p) => p.to))]
+  const { data: others, error: othersErr } = await db
+    .from('thoughts')
+    .select('id, content')
+    .eq('user_id', ownerUserId)
+    .in('id', otherIds)
+  if (othersErr) throw othersErr
+  const text = new Map<string, string>((others ?? []).map((o: { id: string; content: string }) => [o.id, o.content ?? '']))
+
+  for (const p of pairs) {
+    const content = text.get(p.to)
+    if (content === undefined) continue
+    const items = byThought.get(p.from) ?? []
+    if (items.length >= CONNECTED_PER_RESULT) continue
+    items.push({
+      id: p.to,
+      similarity: round2(p.similarity),
+      content: content.length > CONNECTED_PREVIEW_CHARS ? content.slice(0, CONNECTED_PREVIEW_CHARS) + '…' : content,
+    })
+    byThought.set(p.from, items)
+  }
+  return byThought
 }
 
 function rpcResult(id: unknown, result: unknown) {
