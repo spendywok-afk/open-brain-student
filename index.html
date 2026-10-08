@@ -201,6 +201,12 @@
     .thought-meta a { color: #818cf8; text-decoration: none; }
     .thought-meta a:hover { text-decoration: underline; }
     mark { background: #3730a3; color: #fff; border-radius: 3px; padding: 0 2px; }
+    /* A search match found inside a long capture: the paragraph that matched */
+    .chunk-match {
+      font-size: 0.875rem; color: #bbb; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+      border-left: 2px solid #3730a3; padding-left: 12px; margin-top: 10px;
+    }
+    .chunk-note { font-size: 0.72rem; color: #666; font-style: italic; margin-top: 6px; }
     .empty { color: #333; font-size: 0.875rem; text-align: center; padding: 48px 0; }
   </style>
 </head>
@@ -1095,18 +1101,17 @@
     const out = $('searchResults')
     out.innerHTML = '<div class="empty">Searching...</div>'
     $('searchCount').textContent = ''
-    // % and _ are wildcards in ilike; escape them so they match literally
-    const pattern = '%' + q.replace(/[\\%_]/g, m => '\\' + m) + '%'
+    // Hybrid search (Level 7) runs on the server in search-brain: by meaning
+    // and by exact words at once, including paragraphs inside long captures.
+    // Best match first, not newest first.
     try {
-      const { data, error } = await db
-        .from('thoughts').select('*')
-        .ilike('content', pattern)
-        .order('created_at', { ascending: false }).limit(50)
-      if (error) throw error
+      const data = await callCapture('search-brain', { query: q, limit: 20 })
+      const results = data.results || []
       if (q !== lastQuery) return
-      $('searchCount').textContent = data.length === 50 ? 'Showing newest 50 matches' : data.length + ' match' + (data.length === 1 ? '' : 'es')
-      out.innerHTML = data.length
-        ? data.map(t => renderThought(t, q)).join('')
+      $('searchCount').textContent = results.length + ' result' + (results.length === 1 ? '' : 's') +
+        (data.keywordOnly ? ' · exact words only (meaning search unavailable right now)' : '')
+      out.innerHTML = results.length
+        ? results.map(t => renderSearchResult(t, q)).join('')
         : '<div class="empty">Nothing matches "' + esc(q) + '"</div>'
     } catch (e) {
       out.innerHTML = '<div class="empty" style="color:#ef4444">Search failed: ' + esc(e.message) + '</div>'
@@ -1163,6 +1168,30 @@
       </div>`
   }
 
+  // A search result whose match came from a paragraph inside a long capture:
+  // show the capture's first line, then the paragraph that matched.
+  function renderSearchResult(t, query) {
+    if (!t.matched_chunk) return renderThought(t, query)
+    const text = t.content || ''
+    thoughtCache.set(t.id, text)
+    return `
+      <div class="thought" data-id="${esc(t.id)}" data-headline>
+        <div class="thought-text">${esc(headline(text))}</div>
+        <div class="chunk-match">${highlight(snippet(t.matched_chunk, query), query)}</div>
+        <div class="chunk-note">(from partway through a longer capture)</div>
+        <div class="thought-meta">
+          <span>${fmt(t.created_at)}</span>
+          ${sourceLink(t)}
+          <button class="link" data-more>Show all</button>
+        </div>
+      </div>`
+  }
+
+  function headline(text) {
+    const first = text.split('\n')[0]
+    return first.length > 160 ? first.slice(0, 160).trimEnd() + '…' : first
+  }
+
   function sourceLink(t) {
     const m = t.metadata || {}
     if (m.video_id && /^[A-Za-z0-9_-]{11}$/.test(m.video_id)) {
@@ -1184,7 +1213,8 @@
     const expanded = btn.textContent === 'Show less'
     const q = card.closest('#searchResults') ? lastQuery : ''
     if (expanded) {
-      box.innerHTML = q ? highlight(snippet(full, q), q) : esc(full.slice(0, PREVIEW).trimEnd() + '…')
+      box.innerHTML = card.hasAttribute('data-headline') ? esc(headline(full))
+        : q ? highlight(snippet(full, q), q) : esc(full.slice(0, PREVIEW).trimEnd() + '…')
       btn.textContent = 'Show all'
     } else {
       box.innerHTML = q ? highlight(full, q) : esc(full)

@@ -18,6 +18,10 @@
 // Once the embedding is saved, it finds the thought's nearest neighbours (more
 // than 50% similar, at most 5) and links them in thought_links — the graph.
 //
+// Last, long thoughts (over 2,000 characters) are cut into ~300-word pieces,
+// each with its own embedding, in thought_chunks — so a detail buried deep in a
+// transcript can be found on its own. Short thoughts are skipped.
+//
 // It answers the webhook straight away and does the work afterwards, because
 // webhooks give up waiting after a few seconds and an AI call can take longer.
 // It always answers 200: a webhook that keeps failing is no help to anyone,
@@ -37,6 +41,7 @@ import { adminClient } from '../_shared/capture.ts'
 import { callLLM } from '../_shared/llm.ts'
 import { generateEmbedding } from '../_shared/embedding.ts'
 import { linkThought } from '../_shared/links.ts'
+import { saveThoughtChunksSafe } from '../_shared/thought-chunks.ts'
 
 const CATEGORIES = ['idea', 'learning', 'question', 'reference', 'plan', 'reflection']
 
@@ -126,6 +131,15 @@ async function link(record: { id: string; user_id: string | null }, embedding: n
   }
 }
 
+// Chunk it, if it's long enough to be worth it. Never throws, and does nothing
+// for thoughts under 2,000 characters — safe to call on every thought.
+async function chunk(record: { id: string; user_id: string | null; content: string }) {
+  const count = await saveThoughtChunksSafe(
+    adminClient(), record.id, record.content, 'enrich-thought', 'summary', record.user_id ?? undefined,
+  )
+  if (count) console.log(`Chunked ${record.id} into ${count} piece(s)`)
+}
+
 Deno.serve(async (req) => {
   const ok = () => new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } })
 
@@ -155,9 +169,12 @@ Deno.serve(async (req) => {
   }
 
   // Tag first, then embed — every thought gets an embedding either way.
+  // Then chunk: independent of the whole-thought embedding, so a failure there
+  // doesn't stop the pieces from being embedded.
   const work = (async () => {
     if (tag) await enrich(record)
     await embed(record)
+    await chunk(record)
   })()
   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work)
   else await work

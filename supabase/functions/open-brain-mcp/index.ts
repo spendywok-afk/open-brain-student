@@ -10,7 +10,7 @@
 // touches your database itself. It only ever sees what these tools hand back.
 //
 // The tools on the "menu":
-//   search_thoughts  find thoughts related in meaning to a question or topic
+//   search_thoughts  find thoughts by meaning and exact words (hybrid search)
 //   list_recent      your newest thoughts
 //   get_thought      the full text of one thought (the other two show previews)
 //   add_thought      save a new thought
@@ -64,10 +64,11 @@ const TOOLS = [
     name: 'search_thoughts',
     description:
       "Search the user's Open Brain — their personal knowledge base of notes, YouTube transcripts, " +
-      'articles, PDFs and Telegram messages — for thoughts related in meaning to the query. Matching is ' +
-      'by meaning, not exact words, so describe the idea naturally (a question or short phrase works ' +
-      'well). Returns up to 10 matches, most similar first, as previews with a similarity score from ' +
-      '0 to 1. Each match may list "connected" thoughts — ones the brain linked to it automatically ' +
+      'articles, PDFs and Telegram messages. Matches by meaning AND by exact words at once, so both a ' +
+      'natural description and an exact name, number or phrase work. Long captures are searched ' +
+      'paragraph by paragraph: when the match came from inside one, the result includes matched_passage ' +
+      '(the paragraph that matched) — quote that, not the opening of the document. Returns up to 10 ' +
+      'matches, best first. Each match may list "connected" thoughts — ones the brain linked to it automatically ' +
       'because they are close in meaning; mention them when relevant, since they often surface ideas ' +
       'the user forgot. Call get_thought with an id for the full text.',
     inputSchema: {
@@ -215,48 +216,36 @@ async function callTool(name: string, args: Record<string, unknown>) {
       const query = String(args.query ?? '').trim()
       if (!query) throw new Error('query is empty — pass a word or phrase to search for')
 
-      // Search by meaning: turn the question into an embedding, then ask the
-      // database for the thoughts whose embeddings point the same way.
+      // Hybrid search: by meaning (the embedding) and by exact words (the
+      // query text) at once, over whole thoughts and their chunks. If the
+      // embedding fails (provider down, out of credit), embedding stays null and
+      // the database does keyword-only search — still works, just less cleverly.
+      // p_user_id: the service role key skips row-level security, so whose
+      // thoughts to search is passed by hand.
       const embedding = await generateEmbedding({ text: query, userId: ownerUserId, source: 'mcp-search' })
-      if (embedding) {
-        const { data, error } = await db.rpc('search_thoughts', {
-          query_embedding: embedding,
-          p_user_id: ownerUserId,
-          match_threshold: 0.3,
-          match_count: 10,
-        })
-        if (error) throw error
-        if (!data.length) return 'No thoughts are close in meaning to "' + query + '". Try describing it differently.'
-        // Connections are a bonus — if fetching them fails, still return the results.
-        const connected = await connectionsFor(db, ownerUserId, data.map((t: Thought) => t.id)).catch((e) => {
-          console.warn('Search worked, but connections could not be loaded:', e instanceof Error ? e.message : e)
-          return new Map<string, { id: string; similarity: number; content: string }[]>()
-        })
-        return JSON.stringify(
-          data.map((t: Thought & { similarity: number }) => ({
-            ...preview(t),
-            similarity: round2(t.similarity),
-            ...(connected.get(t.id)?.length ? { connected: connected.get(t.id) } : {}),
-          })),
-          null,
-          2,
-        )
-      }
-
-      // No embedding (provider down, out of credit): fall back to plain text
-      // matching so search still works, just less cleverly.
-      // % and _ are wildcards in ilike; escape them so they match literally
-      const pattern = '%' + query.replace(/[\\%_]/g, (m) => '\\' + m) + '%'
-      const { data, error } = await db
-        .from('thoughts')
-        .select('id, content, created_at, metadata')
-        .eq('user_id', ownerUserId)
-        .ilike('content', pattern)
-        .order('created_at', { ascending: false })
-        .limit(10)
+      const { data, error } = await db.rpc('search_thoughts', {
+        query_text: query,
+        p_user_id: ownerUserId,
+        query_embedding: embedding,
+        match_threshold: 0.3,
+        match_count: 10,
+      })
       if (error) throw error
-      if (!data.length) return 'No thoughts contain "' + query + '". Try a different or shorter word.'
-      return JSON.stringify(data.map(preview), null, 2)
+      if (!data.length) return 'Nothing in the brain matches "' + query + '". Try describing it differently.'
+      // Connections are a bonus — if fetching them fails, still return the results.
+      const connected = await connectionsFor(db, ownerUserId, data.map((t: Thought) => t.id)).catch((e) => {
+        console.warn('Search worked, but connections could not be loaded:', e instanceof Error ? e.message : e)
+        return new Map<string, { id: string; similarity: number; content: string }[]>()
+      })
+      return JSON.stringify(
+        data.map((t: SearchResult) => ({
+          ...(t.matched_chunk ? chunkPreview(t) : preview(t)),
+          ...(embedding ? { similarity: round2(t.similarity) } : {}),
+          ...(connected.get(t.id)?.length ? { connected: connected.get(t.id) } : {}),
+        })),
+        null,
+        2,
+      )
     }
 
     case 'list_recent': {
@@ -330,6 +319,26 @@ function preview(t: Thought) {
     source: t.metadata?.source ?? null,
     content: content.length > PREVIEW_CHARS ? content.slice(0, PREVIEW_CHARS) + '…' : content,
     ...(content.length > PREVIEW_CHARS ? { full_length: content.length } : {}),
+  }
+}
+
+type SearchResult = Thought & { similarity: number; matched_chunk: string | null }
+
+// The match came from a paragraph inside a long capture: show that paragraph
+// as the reason it matched, plus just the start of the thought (its title
+// line), not a 1,500-character preview of an unrelated opening.
+const HEADLINE_CHARS = 200
+
+function chunkPreview(t: SearchResult) {
+  const content = t.content ?? ''
+  return {
+    id: t.id,
+    created_at: t.created_at,
+    source: t.metadata?.source ?? null,
+    content: content.length > HEADLINE_CHARS ? content.slice(0, HEADLINE_CHARS) + '…' : content,
+    full_length: content.length,
+    matched_passage: t.matched_chunk,
+    note: '(from partway through a longer capture)',
   }
 }
 
